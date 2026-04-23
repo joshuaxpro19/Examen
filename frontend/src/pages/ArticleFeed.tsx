@@ -13,13 +13,23 @@ interface Article {
   created_at: string;
 }
 
-export function ArticleFeed() {
+interface ArticleFeedProps {
+  onNewArticle?: () => void;
+}
+
+export function ArticleFeed({ onNewArticle }: ArticleFeedProps) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const { isAuthenticated, user } = useAuth();
+  const getStatusLabel = (status: string) => {
+    if (status === 'draft') return 'Borrador';
+    if (status === 'published') return 'Publicado';
+    if (status === 'archived') return 'Archivado';
+    return status;
+  };
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -64,9 +74,9 @@ export function ArticleFeed() {
           ))}
         </select>
         {isAuthenticated && user?.role === 'author' && (
-          <Link to="/articles/new" className="btn-primary">
+          <button className="btn-primary" onClick={onNewArticle}>
             Nuevo Artículo
-          </Link>
+          </button>
         )}
       </div>
 
@@ -84,7 +94,7 @@ export function ArticleFeed() {
               <Link to={`/articles/${article.slug}`}>{article.title}</Link>
             </h3>
             <div className="article-meta">
-              <span className="status">{article.status}</span>
+              <span className={`status status-${article.status}`}>{getStatusLabel(article.status)}</span>
               {article.tags && <span className="tags">{article.tags}</span>}
             </div>
             <Link to={`/articles/${article.slug}`} className="read-more">

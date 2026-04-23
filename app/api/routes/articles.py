@@ -40,7 +40,8 @@ def list_articles(
 
 @router.get("/my-articles", response_model=list[ArticleListResponse])
 def get_my_articles(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role != "author":
+    role_value = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if str(role_value).lower() != "author":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only authors can view their articles")
     article_repo = ArticleRepositoryImpl(db)
     use_case = GetAuthorArticlesUseCase(article_repo)
@@ -80,7 +81,8 @@ def get_article(slug: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=ArticleResponse, status_code=status.HTTP_201_CREATED)
 def create_article(request: CreateArticleRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    if current_user.role != "author":
+    role_value = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if str(role_value).lower() != "author":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only authors can create articles")
     
     article_repo = ArticleRepositoryImpl(db)

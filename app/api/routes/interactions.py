@@ -18,6 +18,8 @@ def create_comment(slug: str, request: CreateCommentRequest, current_user: User 
     article = article_repo.get_by_slug(slug)
     if not article:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
+    if article.status == "archived":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Archived articles do not allow comments")
     
     comment_repo = CommentRepositoryImpl(db)
     comment_use_case = CreateCommentUseCase(comment_repo)
@@ -41,6 +43,8 @@ def get_comments(slug: str, db: Session = Depends(get_db)):
     article = article_repo.get_by_slug(slug)
     if not article:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
+    if article.status == "archived":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Archived articles do not allow comments")
     
     comment_repo = CommentRepositoryImpl(db)
     comments = comment_repo.get_by_article(article.id)
@@ -60,6 +64,8 @@ def vote_article(slug: str, request: VoteRequest, current_user: User = Depends(g
     article = article_repo.get_by_slug(slug)
     if not article:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
+    if article.status == "archived":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Archived articles do not allow votes")
     
     vote_repo = VoteRepositoryImpl(db)
     vote_use_case = VoteArticleUseCase(vote_repo)
@@ -78,6 +84,8 @@ def get_votes(slug: str, db: Session = Depends(get_db)):
     article = article_repo.get_by_slug(slug)
     if not article:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article not found")
+    if article.status == "archived":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Archived articles do not allow votes")
     
     vote_repo = VoteRepositoryImpl(db)
     result = vote_repo.get_votes_count(article.id)

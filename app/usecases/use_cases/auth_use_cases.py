@@ -34,7 +34,7 @@ class LoginUseCase:
             raise ValueError("Invalid email or password")
         
         access_token = create_access_token(
-            data={"sub": str(user.id), "email": user.email, "role": user.role.value},
+            data={"sub": str(user.id), "email": user.email, "role": user.role.value if hasattr(user.role, 'value') else user.role},
             expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
         return TokenDTO(access_token=access_token, token_type="bearer")

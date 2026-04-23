@@ -1,12 +1,13 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthPage } from './pages/AuthPage';
 import { ArticleFeed } from './pages/ArticleFeed';
 import { ArticleDetail } from './pages/ArticleDetail';
 import { ArticleForm } from './pages/ArticleForm';
 import { AuthorPanel } from './pages/AuthorPanel';
+import { Modal } from './components/Modal';
 import './style.css';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -15,6 +16,8 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
+  const [showNewArticle, setShowNewArticle] = useState(false);
+
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
@@ -22,15 +25,14 @@ function AppRoutes() {
         path="/"
         element={
           <PrivateRoute>
-            <ArticleFeed />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/articles/new"
-        element={
-          <PrivateRoute>
-            <ArticleForm />
+            <ArticleFeed onNewArticle={() => setShowNewArticle(true)} />
+            <Modal
+              isOpen={showNewArticle}
+              onClose={() => setShowNewArticle(false)}
+              title="Nuevo Artículo"
+            >
+              <ArticleForm isOpen={showNewArticle} onClose={() => setShowNewArticle(false)} />
+            </Modal>
           </PrivateRoute>
         }
       />
@@ -70,11 +72,11 @@ function Navigation() {
   return (
     <nav className="navbar">
       <div className="nav-brand">
-        <a href="/">Blog Técnico</a>
+        <Link to="/">Blog Técnico</Link>
       </div>
       <div className="nav-links">
-        <a href="/">Inicio</a>
-        {user?.role === 'author' && <a href="/author">Mi Panel</a>}
+        <Link to="/">Inicio</Link>
+        {user?.role === 'author' && <Link to="/author">Mi Panel</Link>}
         <button onClick={logout}>Cerrar Sesión</button>
       </div>
     </nav>
@@ -96,4 +98,4 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('app')!).render(<App />);

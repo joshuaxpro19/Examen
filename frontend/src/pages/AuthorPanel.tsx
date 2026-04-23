@@ -15,23 +15,30 @@ export function AuthorPanel() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { token, user } = useAuth();
+  const { token, user, isAuthenticated } = useAuth();
+
+  const fetchArticles = async () => {
+    if (!isAuthenticated || !token || user?.role !== 'author') {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    
+    try {
+      const data = await api.getMyArticles(token);
+      setArticles(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load articles');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (token && user?.role === 'author') {
-      const fetchArticles = async () => {
-        try {
-          const data = await api.getMyArticles(token);
-          setArticles(data);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load articles');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchArticles();
-    }
-  }, [token, user]);
+    fetchArticles();
+  }, [token, user, isAuthenticated]);
 
   const handleStatusChange = async (slug: string, newStatus: string) => {
     if (!token) return;
@@ -43,67 +50,85 @@ export function AuthorPanel() {
     }
   };
 
-  const handleDelete = async (slug: string) => {
-    if (!token || !confirm('¿Estás seguro de eliminar este artículo?')) return;
-    try {
-      await api.deleteArticle(slug, token);
-      setArticles(articles.filter((a) => a.slug !== slug));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete article');
-    }
-  };
+  if (!isAuthenticated) {
+    return <div className="error">Debes iniciar sesión</div>;
+  }
 
   if (user?.role !== 'author') {
-    return <div className="error">Solo autores pueden ver este panel</div>;
+    return <div className="error">Solo autores pueden ver este panel. Tu rol actual: {user?.role}</div>;
   }
+
+  const drafts = articles.filter((a) => a.status === 'draft');
+  const published = articles.filter((a) => a.status === 'published');
+  const archived = articles.filter((a) => a.status === 'archived');
 
   return (
     <div className="author-panel">
-      <h1>Mis Artículos</h1>
-      <Link to="/articles/new" className="btn-primary">
-        Nuevo Artículo
-      </Link>
+      <h1>Mi Panel de Autor</h1>
+      <p>Usuario: {user?.email} | Rol: {user?.role}</p>
 
       {loading && <div className="loading">Cargando...</div>}
       {error && <div className="error">{error}</div>}
 
-      {!loading && articles.length === 0 && (
-        <div className="empty">No tienes artículos</div>
-      )}
+      {!loading && (
+        <>
+          {drafts.length > 0 && (
+            <section className="article-section">
+              <h2>Borradores ({drafts.length})</h2>
+              <div className="articles-list">
+                {drafts.map((article) => (
+                  <div key={article.id} className="article-card">
+                    <h3>{article.title}</h3>
+                    <div className="article-actions">
+                      <Link to={`/articles/${article.slug}/edit`}>Editar</Link>
+                      <button onClick={() => handleStatusChange(article.slug, 'published')}>Publicar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-      <table className="articles-table">
-        <thead>
-          <tr>
-            <th>Título</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {articles.map((article) => (
-            <tr key={article.id}>
-              <td>
-                <Link to={`/articles/${article.slug}`}>{article.title}</Link>
-              </td>
-              <td>
-                <select
-                  value={article.status}
-                  onChange={(e) => handleStatusChange(article.slug, e.target.value)}
-                  disabled={article.status === 'archived'}
-                >
-                  <option value="draft">Borrador</option>
-                  <option value="published">Publicado</option>
-                  <option value="archived">Archivado</option>
-                </select>
-              </td>
-              <td>
-                <Link to={`/articles/${article.slug}/edit`}>Editar</Link>
-                <button onClick={() => handleDelete(article.slug)}>Eliminar</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          {published.length > 0 && (
+            <section className="article-section">
+              <h2>Publicados ({published.length})</h2>
+              <div className="articles-list">
+                {published.map((article) => (
+                  <div key={article.id} className="article-card">
+                    <h3>{article.title}</h3>
+                    <div className="article-actions">
+                      <Link to={`/articles/${article.slug}`}>Ver</Link>
+                      <Link to={`/articles/${article.slug}/edit`}>Editar</Link>
+                      <button onClick={() => handleStatusChange(article.slug, 'archived')}>Archivar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {archived.length > 0 && (
+            <section className="article-section">
+              <h2>Archivados ({archived.length})</h2>
+              <div className="articles-list">
+                {archived.map((article) => (
+                  <div key={article.id} className="article-card">
+                    <h3>{article.title}</h3>
+                    <div className="article-actions">
+                      <Link to={`/articles/${article.slug}`}>Ver</Link>
+                    </div>
+                    <p className="status-hint">Archivado: no recibe votos ni comentarios.</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {articles.length === 0 && (
+            <div className="empty">No tienes artículos. ¡Crea uno nuevo!</div>
+          )}
+        </>
+      )}
     </div>
   );
 }

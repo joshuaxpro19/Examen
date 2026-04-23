@@ -2,17 +2,24 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { TagInput } from '../components/TagInput';
 
-export function ArticleForm() {
+interface ArticleFormProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSaved?: () => void;
+}
+
+export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProps) {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [status, setStatus] = useState('draft');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fetching, setFetching] = useState(!!slug);
-  const navigate = useNavigate();
   const { token } = useAuth();
 
   useEffect(() => {
@@ -22,7 +29,7 @@ export function ArticleForm() {
           const article = await api.getArticle(slug);
           setTitle(article.title);
           setContent(article.content);
-          setTags(article.tags);
+          setTags(article.tags ? article.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []);
           setStatus(article.status);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load article');
@@ -31,22 +38,51 @@ export function ArticleForm() {
         }
       };
       fetchArticle();
+    } else if (!slug) {
+      setTitle('');
+      setContent('');
+      setTags([]);
+      setStatus('draft');
+      setFetching(false);
     }
   }, [slug, token]);
+
+  const statusLabel =
+    status === 'draft' ? 'Borrador' : status === 'published' ? 'Publicado' : 'Archivado';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    if (slug && status === 'archived') {
+      setError('Los artículos archivados no se pueden editar.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const data = { title, content, tags };
+      const data = { 
+        title, 
+        content, 
+        tags: tags.join(',')
+      };
+
       if (slug) {
         await api.updateArticle(slug, { ...data, status }, token!);
       } else {
         await api.createArticle(data, token!);
       }
-      navigate('/');
+
+      if (onClose) {
+        onClose();
+      }
+
+      if (onSaved) {
+        onSaved();
+      }
+
+      navigate('/author');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save article');
     } finally {
@@ -57,6 +93,10 @@ export function ArticleForm() {
   if (fetching) {
     return <div className="loading">Cargando...</div>;
   }
+
+  const isDraft = status === 'draft';
+  const isPublished = status === 'published';
+  const isArchived = status === 'archived';
 
   return (
     <div className="article-form">
@@ -69,6 +109,7 @@ export function ArticleForm() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={slug ? isArchived : false}
             required
           />
         </div>
@@ -78,29 +119,52 @@ export function ArticleForm() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={10}
+            disabled={slug ? isArchived : false}
             required
           />
         </div>
         <div className="form-group">
-          <label>Tags (separados por coma)</label>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="react, python, fastapi"
-          />
+          <label>Tags</label>
+          <TagInput tags={tags} onChange={setTags} />
         </div>
         <div className="form-group">
           <label>Estado</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="draft">Borrador</option>
-            <option value="published">Publicado</option>
-            <option value="archived">Archivado</option>
-          </select>
+          <div className="status-display">
+            <span className={`status-badge ${status}`}>{statusLabel}</span>
+            {!slug && (
+              <span className="status-hint">Se crea como borrador y luego puedes publicarlo.</span>
+            )}
+            {slug && isDraft && (
+              <button 
+                type="button" 
+                className="btn-publish"
+                onClick={() => setStatus('published')}
+              >
+                Publicar
+              </button>
+            )}
+            {slug && isPublished && (
+              <button 
+                type="button" 
+                className="btn-archive"
+                onClick={() => setStatus('archived')}
+              >
+                Archivar
+              </button>
+            )}
+            {slug && isArchived && <span className="status-hint">Estado final: archivado.</span>}
+          </div>
         </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Guardando...' : 'Guardar'}
-        </button>
+        <div className="form-actions">
+          <button type="submit" disabled={loading || !title || !content || (slug ? isArchived : false)}>
+            {loading ? 'Guardando...' : 'Guardar'}
+          </button>
+          {onClose && (
+            <button type="button" className="btn-cancel" onClick={onClose}>
+              Cancelar
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );

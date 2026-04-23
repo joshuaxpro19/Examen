@@ -20,8 +20,9 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
 
     try {
       await register(email, password, role);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+    } catch (err: any) {
+      console.error('Register error:', err);
+      setError(err?.message || err?.detail || err?.toString() || String(err) || 'Registration failed');
     } finally {
       setLoading(false);
     }

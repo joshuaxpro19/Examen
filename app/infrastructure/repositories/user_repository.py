@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 from sqlalchemy.orm import Session
 from app.domain.entities import User
 from app.domain.enums import UserRole
@@ -8,16 +8,17 @@ from app.infrastructure.security import get_password_hash
 import enum
 
 
-def map_role_to_enum(role: str) -> UserRoleEnum:
-    if role == "author":
+def map_role_to_enum(role: Union[str, UserRole]) -> UserRoleEnum:
+    role_value = role.value if isinstance(role, UserRole) else role
+    if str(role_value).lower() == "author":
         return UserRoleEnum.AUTHOR
     return UserRoleEnum.READER
 
 
-def map_enum_to_role(enum_role: UserRoleEnum) -> str:
+def map_enum_to_role(enum_role: UserRoleEnum) -> UserRole:
     if enum_role == UserRoleEnum.AUTHOR:
-        return "author"
-    return "reader"
+        return UserRole.AUTHOR
+    return UserRole.READER
 
 
 class UserRepositoryImpl(AbstractUserRepository):
@@ -28,7 +29,7 @@ class UserRepositoryImpl(AbstractUserRepository):
         db_user = UserModel(
             email=user.email,
             password_hash=get_password_hash(user.password_hash),
-            role=map_role_to_enum(user.role.value)
+            role=map_role_to_enum(user.role)
         )
         self.db.add(db_user)
         self.db.commit()

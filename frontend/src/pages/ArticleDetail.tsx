@@ -41,6 +41,12 @@ export function ArticleDetail() {
   const [commentError, setCommentError] = useState('');
   const [votemsg, setVotemsg] = useState('');
   const { token, user } = useAuth();
+  const getStatusLabel = (status: string) => {
+    if (status === 'draft') return 'Borrador';
+    if (status === 'published') return 'Publicado';
+    if (status === 'archived') return 'Archivado';
+    return status;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,12 +54,19 @@ export function ArticleDetail() {
       setLoading(true);
       setError('');
       try {
-        const [articleData, commentsData, votesData] = await Promise.all([
-          api.getArticle(slug),
+        const articleData = await api.getArticle(slug);
+        setArticle(articleData);
+
+        if (articleData.status === 'archived') {
+          setComments([]);
+          setVotes({ upvotes: 0, downvotes: 0, score: 0 });
+          return;
+        }
+
+        const [commentsData, votesData] = await Promise.all([
           api.getComments(slug),
           api.getVotes(slug),
         ]);
-        setArticle(articleData);
         setComments(commentsData);
         setVotes(votesData);
       } catch (err) {
@@ -103,6 +116,7 @@ export function ArticleDetail() {
   }
 
   const isOwner = user?.id === article.author_id;
+  const isArchived = article.status === 'archived';
 
   return (
     <div className="article-detail">
@@ -110,7 +124,7 @@ export function ArticleDetail() {
 
       <h1>{article.title}</h1>
       <div className="article-meta">
-        <span className="status">{article.status}</span>
+        <span className={`status status-${article.status}`}>{getStatusLabel(article.status)}</span>
         {article.tags && <span className="tags">{article.tags}</span>}
         {article.created_at && (
           <span className="date">
@@ -121,18 +135,35 @@ export function ArticleDetail() {
 
       <div className="article-content">{article.content}</div>
 
-      <div className="vote-section">
-        <span>Puntuación: {votes?.score ?? 0}</span>
-        {token && (
-          <>
-            <button onClick={() => handleVote('upvote')}>▲</button>
-            <button onClick={() => handleVote('downvote')}>▼</button>
-            {votemsg && <span className="error">{votemsg}</span>}
-          </>
-        )}
-      </div>
+      {isArchived ? (
+        <div className="archived-notice">Este artículo está archivado y ya no acepta votos ni comentarios.</div>
+      ) : (
+        <div className="vote-card">
+          <div className="vote-stats">
+            <div className="vote-stat">
+              <strong>{votes?.score ?? 0}</strong>
+              <span>Puntuación</span>
+            </div>
+            <div className="vote-stat">
+              <strong>{votes?.upvotes ?? 0}</strong>
+              <span>Me gusta</span>
+            </div>
+            <div className="vote-stat">
+              <strong>{votes?.downvotes ?? 0}</strong>
+              <span>No me gusta</span>
+            </div>
+          </div>
+          {token && (
+            <div className="vote-actions">
+              <button className="vote-up" onClick={() => handleVote('upvote')}>+1 Me gusta</button>
+              <button className="vote-down" onClick={() => handleVote('downvote')}>-1 No me gusta</button>
+            </div>
+          )}
+          {votemsg && <div className="error">{votemsg}</div>}
+        </div>
+      )}
 
-      {isOwner && (
+      {isOwner && !isArchived && (
         <div className="author-actions">
           <Link to={`/articles/${article.slug}/edit`} className="btn-primary">
             Editar
@@ -140,39 +171,43 @@ export function ArticleDetail() {
         </div>
       )}
 
-      <section className="comments-section">
-        <h2>Comentarios</h2>
-        {comments.length === 0 ? (
-          <div className="empty">No hay comentarios aún</div>
-        ) : (
-          <ul className="comments-list">
-            {comments.map((comment) => (
-              <li key={comment.id} className="comment">
-                <p>{comment.content}</p>
-                <span className="comment-date">
-                  {comment.created_at && new Date(comment.created_at).toLocaleDateString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+      {!isArchived && (
+        <section className="comments-section">
+          <h2>Comentarios</h2>
+          {comments.length === 0 ? (
+            <div className="empty">No hay comentarios aún</div>
+          ) : (
+            <ul className="comments-list">
+              {comments.map((comment) => (
+                <li key={comment.id} className="comment">
+                  <p>{comment.content}</p>
+                  <span className="comment-date">
+                    {comment.created_at && new Date(comment.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {token && (
-          <form onSubmit={handleComment} className="comment-form">
-            <h3>Agregar comentario</h3>
-            {commentError && <div className="error">{commentError}</div>}
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Escribe tu comentario..."
-              required
-            />
-            <button type="submit" disabled={commentLoading}>
-              {commentLoading ? 'Enviando...' : 'Enviar'}
-            </button>
-          </form>
-        )}
-      </section>
+          {token ? (
+            <form onSubmit={handleComment} className="comment-form">
+              <h3>Agregar comentario</h3>
+              {commentError && <div className="error">{commentError}</div>}
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe tu comentario..."
+                required
+              />
+              <button type="submit" disabled={commentLoading}>
+                {commentLoading ? 'Enviando...' : 'Enviar'}
+              </button>
+            </form>
+          ) : (
+            <p className="muted">Inicia sesión para comentar y votar.</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

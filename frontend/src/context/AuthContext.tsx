@@ -19,6 +19,20 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+function parseJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(normalized);
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('http://localhost:8000/auth/login', {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -49,14 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await response.json();
     const token = data.access_token;
 
-    const userResponse = await fetch('http://localhost:8000/articles/my-articles', {
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => ({ ok: false }));
+    const payload = parseJwtPayload(token);
+    const role = payload?.role === 'author' ? 'author' : 'reader';
+    const userId = Number(payload?.sub ?? 0) || 1;
 
     const user: User = {
-      id: 1,
+      id: userId,
       email,
-      role: userResponse.ok ? 'author' : 'reader',
+      role,
     };
 
     localStorage.setItem(TOKEN_KEY, token);
@@ -67,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, password: string, role: string) => {
-    const response = await fetch('http://localhost:8000/auth/register', {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, role }),
