@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +23,9 @@ export function ArticleFeed({ onNewArticle }: ArticleFeedProps) {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
+  const [isTagComboOpen, setIsTagComboOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
+  const comboRef = useRef<HTMLDivElement | null>(null);
   const getStatusLabel = (status: string) => {
     if (status === 'draft') return 'Borrador';
     if (status === 'published') return 'Publicado';
@@ -51,7 +53,20 @@ export function ArticleFeed({ onNewArticle }: ArticleFeedProps) {
     fetchArticles();
   }, [search, tagFilter]);
 
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!comboRef.current) return;
+      if (!comboRef.current.contains(event.target as Node)) {
+        setIsTagComboOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   const uniqueTags = [...new Set(articles.flatMap((a) => a.tags.split(',').map((t) => t.trim()).filter(Boolean)))];
+  const comboLabel = tagFilter || 'Todos los tags';
 
   return (
     <div className="article-feed">
@@ -65,14 +80,45 @@ export function ArticleFeed({ onNewArticle }: ArticleFeedProps) {
           onChange={(e) => setSearch(e.target.value)}
           className="search-input"
         />
-        <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
-          <option value="">Todos los tags</option>
-          {uniqueTags.map((tag) => (
-            <option key={tag} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
+        <div className="tag-combobox" ref={comboRef}>
+          <button
+            type="button"
+            className="tag-combobox-trigger"
+            onClick={() => setIsTagComboOpen((prev) => !prev)}
+            aria-haspopup="listbox"
+            aria-expanded={isTagComboOpen}
+          >
+            <span>{comboLabel}</span>
+            <span className="combo-arrow" aria-hidden="true">▾</span>
+          </button>
+          {isTagComboOpen && (
+            <div className="tag-combobox-menu" role="listbox">
+              <button
+                type="button"
+                className={`tag-combo-option ${tagFilter === '' ? 'active' : ''}`}
+                onClick={() => {
+                  setTagFilter('');
+                  setIsTagComboOpen(false);
+                }}
+              >
+                Todos los tags
+              </button>
+              {uniqueTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={`tag-combo-option ${tagFilter === tag ? 'active' : ''}`}
+                  onClick={() => {
+                    setTagFilter(tag);
+                    setIsTagComboOpen(false);
+                  }}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         {isAuthenticated && user?.role === 'author' && (
           <button className="btn-primary" onClick={onNewArticle}>
             Nuevo Artículo

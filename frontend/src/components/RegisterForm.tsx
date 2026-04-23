@@ -54,10 +54,12 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         </div>
         <div className="form-group">
           <label>Rol</label>
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="reader">Lector</option>
-            <option value="author">Autor</option>
-          </select>
+          <div className="select-wrap">
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="reader">Lector</option>
+              <option value="author">Autor</option>
+            </select>
+          </div>
         </div>
         <button type="submit" disabled={loading}>
           {loading ? 'Registrando...' : 'Registrarse'}

@@ -77,11 +77,15 @@ export function AuthorPanel() {
               <h2>Borradores ({drafts.length})</h2>
               <div className="articles-list">
                 {drafts.map((article) => (
-                  <div key={article.id} className="article-card">
-                    <h3>{article.title}</h3>
-                    <div className="article-actions">
-                      <Link to={`/articles/${article.slug}/edit`}>Editar</Link>
-                      <button onClick={() => handleStatusChange(article.slug, 'published')}>Publicar</button>
+                  <div key={article.id} className="article-card author-article-card">
+                    <div className="author-card-head">
+                      <h3>{article.title}</h3>
+                      <div className="author-card-actions">
+                        <Link className="action-btn" to={`/articles/${article.slug}/edit`}>Editar</Link>
+                        <button className="action-btn publish" onClick={() => handleStatusChange(article.slug, 'published')}>
+                          Publicar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -94,12 +98,16 @@ export function AuthorPanel() {
               <h2>Publicados ({published.length})</h2>
               <div className="articles-list">
                 {published.map((article) => (
-                  <div key={article.id} className="article-card">
-                    <h3>{article.title}</h3>
-                    <div className="article-actions">
-                      <Link to={`/articles/${article.slug}`}>Ver</Link>
-                      <Link to={`/articles/${article.slug}/edit`}>Editar</Link>
-                      <button onClick={() => handleStatusChange(article.slug, 'archived')}>Archivar</button>
+                  <div key={article.id} className="article-card author-article-card">
+                    <div className="author-card-head">
+                      <h3>{article.title}</h3>
+                      <div className="author-card-actions">
+                        <Link className="action-btn" to={`/articles/${article.slug}`}>Ver</Link>
+                        <Link className="action-btn" to={`/articles/${article.slug}/edit`}>Editar</Link>
+                        <button className="action-btn archive" onClick={() => handleStatusChange(article.slug, 'archived')}>
+                          Archivar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -112,10 +120,12 @@ export function AuthorPanel() {
               <h2>Archivados ({archived.length})</h2>
               <div className="articles-list">
                 {archived.map((article) => (
-                  <div key={article.id} className="article-card">
-                    <h3>{article.title}</h3>
-                    <div className="article-actions">
-                      <Link to={`/articles/${article.slug}`}>Ver</Link>
+                  <div key={article.id} className="article-card author-article-card">
+                    <div className="author-card-head">
+                      <h3>{article.title}</h3>
+                      <div className="author-card-actions">
+                        <Link className="action-btn" to={`/articles/${article.slug}`}>Ver</Link>
+                      </div>
                     </div>
                     <p className="status-hint">Archivado: no recibe votos ni comentarios.</p>
                   </div>

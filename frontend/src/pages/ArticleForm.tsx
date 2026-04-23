@@ -8,9 +8,10 @@ interface ArticleFormProps {
   isOpen?: boolean;
   onClose?: () => void;
   onSaved?: () => void;
+  embedded?: boolean;
 }
 
-export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProps) {
+export function ArticleForm({ isOpen = true, onClose, onSaved, embedded = false }: ArticleFormProps) {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -98,13 +99,15 @@ export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProp
   const isArchived = status === 'archived';
 
   return (
-    <div className="article-form">
-      <div className="form-header">
-        <Link to={backTarget} className="back-square" aria-label="Volver">
-          <span aria-hidden="true">&lt;</span>
-        </Link>
-        <h1>{slug ? 'Editar Artículo' : 'Nuevo Artículo'}</h1>
-      </div>
+    <div className={`article-form ${embedded ? 'embedded' : ''}`}>
+      {!embedded && (
+        <div className="form-header">
+          <Link to={backTarget} className="back-square" aria-label="Volver">
+            <span aria-hidden="true">&lt;</span>
+          </Link>
+          <h1>{slug ? 'Editar Artículo' : 'Nuevo Artículo'}</h1>
+        </div>
+      )}
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">

@@ -38,6 +38,9 @@ class UpdateArticleUseCase:
         
         current_status = ArticleStatus(article.status) if isinstance(article.status, str) else article.status
 
+        if current_status == ArticleStatus.ARCHIVED:
+            raise ValueError("Archived articles cannot be modified")
+
         if dto.status:
             new_status = ArticleStatus(dto.status)
             if new_status != current_status and not ArticleStateService.can_transition(current_status, new_status):

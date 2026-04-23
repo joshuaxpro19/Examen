@@ -31,7 +31,7 @@ function AppRoutes() {
               onClose={() => setShowNewArticle(false)}
               title="Nuevo Artículo"
             >
-              <ArticleForm isOpen={showNewArticle} onClose={() => setShowNewArticle(false)} />
+              <ArticleForm isOpen={showNewArticle} onClose={() => setShowNewArticle(false)} embedded />
             </Modal>
           </PrivateRoute>
         }

@@ -57,12 +57,6 @@ export function ArticleDetail() {
         const articleData = await api.getArticle(slug);
         setArticle(articleData);
 
-        if (articleData.status === 'archived') {
-          setComments([]);
-          setVotes({ upvotes: 0, downvotes: 0, score: 0 });
-          return;
-        }
-
         const [commentsData, votesData] = await Promise.all([
           api.getComments(slug),
           api.getVotes(slug),
@@ -115,8 +109,6 @@ export function ArticleDetail() {
     try {
       await api.updateArticle(slug, { status: 'archived' }, token);
       setArticle((prev) => (prev ? { ...prev, status: 'archived' } : prev));
-      setComments([]);
-      setVotes({ upvotes: 0, downvotes: 0, score: 0 });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo archivar el artículo');
     }
@@ -180,53 +172,75 @@ export function ArticleDetail() {
 
       <div className="article-content">{article.content}</div>
 
-      {isArchived ? (
-        <div className="archived-notice">Este artículo está archivado y ya no acepta votos ni comentarios.</div>
-      ) : (
-        <div className="vote-card">
-          <div className="vote-stats">
-            <div className="vote-stat">
-              <strong>{votes?.score ?? 0}</strong>
-              <span>Puntuación</span>
-            </div>
-            <div className="vote-stat">
-              <strong>{votes?.upvotes ?? 0}</strong>
-              <span>Me gusta</span>
-            </div>
-            <div className="vote-stat">
-              <strong>{votes?.downvotes ?? 0}</strong>
-              <span>No me gusta</span>
-            </div>
-          </div>
-          {token && (
-            <div className="vote-actions">
-              <button className="vote-up" onClick={() => handleVote('upvote')}>Like</button>
-              <button className="vote-down" onClick={() => handleVote('downvote')}>No Like</button>
-            </div>
-          )}
-          {votemsg && <div className="error">{votemsg}</div>}
-        </div>
+      {isArchived && (
+        <div className="archived-notice">Este artículo está archivado. Puedes ver historial, pero no votar ni comentar.</div>
       )}
 
-      {!isArchived && (
-        <section className="comments-section">
-          <h2>Comentarios</h2>
-          {comments.length === 0 ? (
-            <div className="empty">No hay comentarios aún</div>
-          ) : (
-            <ul className="comments-list">
-              {comments.map((comment) => (
-                <li key={comment.id} className="comment">
-                  <p>{comment.content}</p>
-                  <span className="comment-date">
-                    {comment.created_at && new Date(comment.created_at).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="vote-card">
+        <div className="vote-stats">
+          <div className="vote-stat">
+            <strong>{votes?.score ?? 0}</strong>
+            <span>Puntuación</span>
+          </div>
+          <div className="vote-stat">
+            <strong>{votes?.upvotes ?? 0}</strong>
+            <span>Me gusta</span>
+          </div>
+          <div className="vote-stat">
+            <strong>{votes?.downvotes ?? 0}</strong>
+            <span>No me gusta</span>
+          </div>
+        </div>
+        {token && (
+          <div className="vote-actions">
+            <button
+              className="vote-up vote-icon-btn"
+              onClick={() => handleVote('upvote')}
+              disabled={isArchived}
+              aria-label="Me gusta"
+              title="Me gusta"
+            >
+              <span aria-hidden="true">👍</span>
+            </button>
+            <button
+              className="vote-down vote-icon-btn"
+              onClick={() => handleVote('downvote')}
+              disabled={isArchived}
+              aria-label="No me gusta"
+              title="No me gusta"
+            >
+              <span aria-hidden="true">👎</span>
+            </button>
+          </div>
+        )}
+        {votemsg && <div className="error">{votemsg}</div>}
+      </div>
 
-          {token ? (
+      <section className="comments-section">
+        <div className="comments-header">
+          <h2>Comentarios</h2>
+          <span>{comments.length}</span>
+        </div>
+
+        {comments.length === 0 ? (
+          <div className="empty">No hay comentarios aún</div>
+        ) : (
+          <ul className="comments-list">
+            {comments.map((comment) => (
+              <li key={comment.id} className="comment">
+                <p>{comment.content}</p>
+                <span className="comment-date">
+                  {comment.created_at && new Date(comment.created_at).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {token ? (
+          isArchived ? (
+            <p className="muted">Los comentarios están en modo solo lectura porque el artículo está archivado.</p>
+          ) : (
             <form onSubmit={handleComment} className="comment-form">
               <h3>Agregar comentario</h3>
               {commentError && <div className="error">{commentError}</div>}
@@ -237,14 +251,14 @@ export function ArticleDetail() {
                 required
               />
               <button type="submit" disabled={commentLoading}>
-                {commentLoading ? 'Enviando...' : 'Enviar'}
+                {commentLoading ? 'Enviando...' : 'Publicar comentario'}
               </button>
             </form>
-          ) : (
-            <p className="muted">Inicia sesión para comentar y votar.</p>
-          )}
-        </section>
-      )}
+          )
+        ) : (
+          <p className="muted">Inicia sesión para comentar y votar.</p>
+        )}
+      </section>
     </div>
   );
 }
