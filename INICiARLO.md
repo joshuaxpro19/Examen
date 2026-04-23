@@ -1,0 +1,1 @@
+Corre el docker-compose, y deberia crearte el front y el back automaticamente
