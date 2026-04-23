@@ -36,10 +36,11 @@ class UpdateArticleUseCase:
         if not AuthorizerService.can_edit_article(user, article.author_id):
             raise PermissionError("You can only edit your own articles")
         
+        current_status = ArticleStatus(article.status) if isinstance(article.status, str) else article.status
+
         if dto.status:
-            current_status = article.status
             new_status = ArticleStatus(dto.status)
-            if not ArticleStateService.can_transition(current_status, new_status):
+            if new_status != current_status and not ArticleStateService.can_transition(current_status, new_status):
                 raise ValueError(f"Invalid status transition from {current_status.value} to {new_status.value}")
         
         updated_article = Article(
@@ -47,7 +48,7 @@ class UpdateArticleUseCase:
             title=dto.title if dto.title else article.title,
             content=dto.content if dto.content else article.content,
             tags=dto.tags if dto.tags is not None else article.tags,
-            status=ArticleStatus(dto.status) if dto.status else article.status
+            status=ArticleStatus(dto.status) if dto.status else current_status
         )
         return self.article_repository.update(updated_article)
 

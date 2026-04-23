@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { TagInput } from '../components/TagInput';
@@ -49,6 +49,7 @@ export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProp
 
   const statusLabel =
     status === 'draft' ? 'Borrador' : status === 'published' ? 'Publicado' : 'Archivado';
+  const backTarget = slug ? `/articles/${slug}` : '/author';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +70,7 @@ export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProp
       };
 
       if (slug) {
-        await api.updateArticle(slug, { ...data, status }, token!);
+        await api.updateArticle(slug, data, token!);
       } else {
         await api.createArticle(data, token!);
       }
@@ -94,13 +95,16 @@ export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProp
     return <div className="loading">Cargando...</div>;
   }
 
-  const isDraft = status === 'draft';
-  const isPublished = status === 'published';
   const isArchived = status === 'archived';
 
   return (
     <div className="article-form">
-      <h1>{slug ? 'Editar Artículo' : 'Nuevo Artículo'}</h1>
+      <div className="form-header">
+        <Link to={backTarget} className="back-square" aria-label="Volver">
+          <span aria-hidden="true">&lt;</span>
+        </Link>
+        <h1>{slug ? 'Editar Artículo' : 'Nuevo Artículo'}</h1>
+      </div>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -133,24 +137,6 @@ export function ArticleForm({ isOpen = true, onClose, onSaved }: ArticleFormProp
             <span className={`status-badge ${status}`}>{statusLabel}</span>
             {!slug && (
               <span className="status-hint">Se crea como borrador y luego puedes publicarlo.</span>
-            )}
-            {slug && isDraft && (
-              <button 
-                type="button" 
-                className="btn-publish"
-                onClick={() => setStatus('published')}
-              >
-                Publicar
-              </button>
-            )}
-            {slug && isPublished && (
-              <button 
-                type="button" 
-                className="btn-archive"
-                onClick={() => setStatus('archived')}
-              >
-                Archivar
-              </button>
             )}
             {slug && isArchived && <span className="status-hint">Estado final: archivado.</span>}
           </div>

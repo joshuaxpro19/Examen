@@ -267,6 +267,33 @@ button[type='button']:disabled {
   margin-bottom: 10px;
 }
 
+.article-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.article-title-row h1 {
+  margin-bottom: 6px;
+}
+
+.title-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.edit-button svg {
+  opacity: 0.9;
+}
+
 .status,
 .status-badge {
   display: inline-flex;
@@ -300,12 +327,61 @@ button[type='button']:disabled {
   font-size: 0.88rem;
 }
 
+.article-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3853ad;
+  border: 1px solid #d9e1fb;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.date {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .read-more,
 .back-link,
 .article-actions a {
   color: var(--primary);
   font-weight: 700;
   text-decoration: none;
+}
+
+.article-topbar,
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.form-header h1 {
+  margin: 0;
+}
+
+.back-square {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #4460bf;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border: 1px solid #d6e0fb;
+  background: #eef3ff;
+}
+
+.back-square:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(90, 125, 240, 0.22);
 }
 
 .article-content,
@@ -349,6 +425,10 @@ button[type='button']:disabled {
   display: flex;
   gap: 10px;
   margin-top: 12px;
+}
+
+.vote-actions button {
+  min-width: 110px;
 }
 
 .vote-up {
@@ -398,6 +478,11 @@ button[type='button']:disabled {
 
 .comment-form {
   margin-top: 14px;
+}
+
+.article-form {
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 .author-panel p {
@@ -547,5 +632,10 @@ button[type='button']:disabled {
 
   .vote-actions {
     flex-direction: column;
+  }
+
+  .article-title-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
